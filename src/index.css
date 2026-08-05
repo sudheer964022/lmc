@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+  
+  * {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+  }
+
+  input, textarea, select {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    user-select: text !important;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ─── Custom Animation Keyframes ─────────────────────────────────────────── */
+
+@keyframes route-dash {
+  to { stroke-dashoffset: -24; }
+}
+@keyframes bike-bob {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-3px) scale(1.07); }
+}
+@keyframes ping-slow {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  70%  { transform: scale(2.2); opacity: 0.1; }
+  100% { transform: scale(2.2); opacity: 0;   }
+}
+@keyframes ping-fast {
+  0%   { transform: scale(1);   opacity: 0.9; }
+  100% { transform: scale(2.8); opacity: 0;   }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes progress-fill {
+  from { stroke-dasharray: 0, 1000; }
+  to   { stroke-dasharray: var(--dash), 1000; }
+}
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0) rotate(0deg);  }
+  30%       { transform: translateY(-4px) rotate(-5deg); }
+  60%       { transform: translateY(-2px) rotate(3deg); }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.5); }
+  50%       { box-shadow: 0 0 0 8px rgba(37,99,235,0);  }
+}
+@keyframes step-done {
+  0%   { transform: scale(0.6); opacity: 0; }
+  70%  { transform: scale(1.2); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes trail {
+  0%   { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(2.5); }
+}
+@keyframes eta-tick {
+  0%  { opacity: 1;   transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.95); }
+  100%{ opacity: 1;   transform: scale(1); }
+}
+@keyframes notif-slide {
+  from { opacity: 0; transform: translateX(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}
+@keyframes btn-glow {
+  0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.18); }
+  50%       { box-shadow: 0 4px 36px rgba(0,0,0,0.32); }
+}
+
+.animate-route-dash      { animation: route-dash     0.6s linear infinite; }
+.animate-bike-bob        { animation: bike-bob       1.4s ease-in-out infinite; }
+.animate-ping-slow       { animation: ping-slow      1.8s cubic-bezier(0,0,0.2,1) infinite; }
+.animate-ping-fast       { animation: ping-fast      0.9s cubic-bezier(0,0,0.2,1) infinite; }
+.animate-slide-up        { animation: slide-up       0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+.animate-fade-in         { animation: fade-in        0.3s ease both; }
+.animate-shimmer         { animation: shimmer        2s linear infinite; }
+.animate-bounce-subtle   { animation: bounce-subtle  2s ease-in-out infinite; }
+.animate-glow-pulse      { animation: glow-pulse     2s ease-in-out infinite; }
+.animate-step-done       { animation: step-done      0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+.animate-trail           { animation: trail          1s ease-out infinite; }
+.animate-eta-tick        { animation: eta-tick       1s ease-in-out infinite; }
+.animate-notif-slide     { animation: notif-slide    0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+.animate-btn-glow        { animation: btn-glow       2.5s ease-in-out infinite; }

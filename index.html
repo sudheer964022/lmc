@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image" href="/avm.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LMC</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // Globally disable copy, cut, paste, and right-click (context menu)
+      document.addEventListener('copy', (e) => e.preventDefault());
+      document.addEventListener('cut', (e) => e.preventDefault());
+      document.addEventListener('paste', (e) => e.preventDefault());
+      document.addEventListener('contextmenu', (e) => e.preventDefault());
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
