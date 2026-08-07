@@ -1,24 +1,33 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ArrowLeft, MapPin, Navigation, ScanBarcode, 
-  Camera, CheckCircle2, Package, Clock, Phone,
-  ParkingSquare, Bike, AlertCircle, Bell
+  Camera, CheckCircle2, Package, Clock, Phone, MessageSquare,
+  ParkingSquare, Bike, AlertCircle, Bell, Paperclip, CheckCheck,
+  FileText, Image as ImageIcon, ShieldCheck, PenTool
 } from 'lucide-react';
 
 // ─── Bike Status Steps ────────────────────────────────────────────────────────
-const STEPS = [
+const COLLECTION_STEPS = [
   { id: 'going',   label: 'Going',     fullLabel: 'Going to Client', subLabel: 'En route',       icon: Bike,         bgClass: 'bg-blue-600',    lightBg: 'bg-blue-50',    textClass: 'text-blue-700',    borderClass: 'border-blue-500',    ringClass: 'ring-blue-400',    glowColor: '37,99,235'  },
-  { id: 'near',    label: 'Near',      fullLabel: 'Near Client',     subLabel: '< 200m away',    icon: MapPin,       bgClass: 'bg-amber-500',   lightBg: 'bg-amber-50',   textClass: 'text-amber-700',   borderClass: 'border-amber-500',   ringClass: 'ring-amber-400',   glowColor: '245,158,11' },
-  { id: 'stop',    label: 'Stop',      fullLabel: 'Stop Bike',       subLabel: 'Park & secure',  icon: ParkingSquare,bgClass: 'bg-orange-500',  lightBg: 'bg-orange-50',  textClass: 'text-orange-700',  borderClass: 'border-orange-500',  ringClass: 'ring-orange-400',  glowColor: '249,115,22' },
-  { id: 'collect', label: 'Collect',   fullLabel: 'Collect Sample',  subLabel: 'Scan & verify',  icon: Package,      bgClass: 'bg-emerald-600', lightBg: 'bg-emerald-50', textClass: 'text-emerald-700', borderClass: 'border-emerald-500', ringClass: 'ring-emerald-400', glowColor: '5,150,105'  },
+  { id: 'near',    label: 'Near',      fullLabel: 'Near Client',     subLabel: 'Scan & verify',  icon: MapPin,       bgClass: 'bg-amber-500',   lightBg: 'bg-amber-50',   textClass: 'text-amber-700',   borderClass: 'border-amber-500',   ringClass: 'ring-amber-400',   glowColor: '245,158,11' },
+  { id: 'collect', label: 'Collect',   fullLabel: 'Collect Sample',  subLabel: 'Confirm bagged', icon: Package,      bgClass: 'bg-emerald-600', lightBg: 'bg-emerald-50', textClass: 'text-emerald-700', borderClass: 'border-emerald-500', ringClass: 'ring-emerald-400', glowColor: '5,150,105'  },
   { id: 'done',    label: 'Done',      fullLabel: 'Collected',       subLabel: 'Complete!',      icon: CheckCircle2, bgClass: 'bg-green-600',   lightBg: 'bg-green-50',   textClass: 'text-green-700',   borderClass: 'border-green-500',   ringClass: 'ring-green-400',   glowColor: '22,163,74'  },
+];
+
+const DELIVERY_STEPS = [
+  { id: 'collect_lab',label: 'Collect',   fullLabel: 'Collect from Lab', subLabel: 'At Lab',         icon: Package,      bgClass: 'bg-indigo-600',  lightBg: 'bg-indigo-50',  textClass: 'text-indigo-700',  borderClass: 'border-indigo-500',  ringClass: 'ring-indigo-400',  glowColor: '79,70,229' },
+  { id: 'going',   label: 'Going',     fullLabel: 'Going to Client', subLabel: 'En route',       icon: Bike,         bgClass: 'bg-blue-600',    lightBg: 'bg-blue-50',    textClass: 'text-blue-700',    borderClass: 'border-blue-500',    ringClass: 'ring-blue-400',    glowColor: '37,99,235'  },
+  { id: 'near',    label: 'Near',      fullLabel: 'Near Client',     subLabel: 'Arrived',        icon: MapPin,       bgClass: 'bg-amber-500',   lightBg: 'bg-amber-50',   textClass: 'text-amber-700',   borderClass: 'border-amber-500',   ringClass: 'ring-amber-400',   glowColor: '245,158,11' },
+  { id: 'verify',  label: 'Verify',    fullLabel: 'Verify Client',   subLabel: 'Enter OTP',      icon: ShieldCheck,  bgClass: 'bg-purple-600',  lightBg: 'bg-purple-50',  textClass: 'text-purple-700',  borderClass: 'border-purple-500',  ringClass: 'ring-purple-400',  glowColor: '147,51,234' },
+  { id: 'deliver', label: 'Deliver',   fullLabel: 'Deliver Item',    subLabel: 'Sign & Handover',icon: Package,      bgClass: 'bg-emerald-600', lightBg: 'bg-emerald-50', textClass: 'text-emerald-700', borderClass: 'border-emerald-500', ringClass: 'ring-emerald-400', glowColor: '5,150,105'  },
+  { id: 'done',    label: 'Done',      fullLabel: 'Delivered',       subLabel: 'Complete!',      icon: CheckCircle2, bgClass: 'bg-green-600',   lightBg: 'bg-green-50',   textClass: 'text-green-700',   borderClass: 'border-green-500',   ringClass: 'ring-green-400',   glowColor: '22,163,74'  },
 ];
 
 // ─── Smooth eased lerp helper ─────────────────────────────────────────────────
 const lerp = (a, b, t) => a + (b - a) * t;
 
 // ─── Bike Map with Rich Animations ───────────────────────────────────────────
-const BikeMap = ({ client, stepId, onClick }) => {
+const BikeMap = ({ client, stepId, onClick, onNear, steps }) => {
   const [bearing, setBearing]   = useState(42);
   const [smoothBearing, setSmoothBearing] = useState(42);
   const [eta, setEta]           = useState(client.distance ? Math.round(client.distance * 4) : 8);
@@ -32,7 +41,9 @@ const BikeMap = ({ client, stepId, onClick }) => {
   const tickRef        = useRef(null);
 
   // ── target progress per step ──
-  const stepTarget = { going: 62, near: 82, stop: 92, collect: 100, done: 100 };
+  const stepTarget = { collect_lab: 20, going: 62, near: 90, verify: 90, collect: 100, deliver: 100, done: 100 };
+
+  const hasTriggeredRef = useRef(false);
 
   // ── rAF smooth interpolation loop ──
   const raf = useCallback(() => {
@@ -41,9 +52,17 @@ const BikeMap = ({ client, stepId, onClick }) => {
       const norm = ((diff + 180) % 360) - 180;
       return b + norm * 0.03; // slower lerp
     });
-    setSmoothProgress(p => lerp(p, targetProgress.current, 0.012)); // slower progress
+    setSmoothProgress(p => {
+      const nextP = lerp(p, targetProgress.current, 0.005); // slower progress
+      if (stepId === 'going' && nextP >= 60 && onNear && !hasTriggeredRef.current) {
+        hasTriggeredRef.current = true;
+        // Defer execution out of the render loop to avoid the setState warning
+        setTimeout(() => onNear(), 0);
+      }
+      return nextP;
+    });
     frameRef.current = requestAnimationFrame(raf);
-  }, []);
+  }, [stepId, onNear]);
 
   useEffect(() => {
     frameRef.current = requestAnimationFrame(raf);
@@ -54,8 +73,8 @@ const BikeMap = ({ client, stepId, onClick }) => {
   useEffect(() => {
     targetProgress.current = stepTarget[stepId] ?? 0;
 
-    // When stop/collect/done: lock bearing to 0 (stopped, no wobble)
-    if (stepId === 'stop' || stepId === 'collect' || stepId === 'done') {
+    // When near/collect/done: lock bearing to 0 (stopped, no wobble)
+    if (stepId === 'near' || stepId === 'collect' || stepId === 'done') {
       targetBearing.current = 0;
       return;
     }
@@ -85,11 +104,11 @@ const BikeMap = ({ client, stepId, onClick }) => {
   })();
 
   const etaLabel = eta < 1 ? '< 1 min' : `${Math.ceil(eta)} min`;
-  const statusEmoji = { going: '🚴', near: '📍', stop: '🅿️', collect: '📦', done: '✅' }[stepId];
-  const statusText  = { going: `Heading to ${client.clientName}`, near: `Near ${client.clientName}`, stop: 'Parking bike', collect: 'Collecting sample', done: 'Sample collected!' }[stepId];
+  const statusEmoji = { going: '🚴', near: '📍', collect: '📦', done: '✅' }[stepId];
+  const statusText  = { going: `Heading to ${client.clientName}`, near: `Near ${client.clientName}`, collect: 'Collecting sample', done: 'Sample collected!' }[stepId];
 
   return (
-    <div onClick={onClick} className="relative w-full overflow-hidden cursor-pointer" style={{ height: 168 }}>
+    <div onClick={onClick} className="relative w-full overflow-hidden cursor-pointer" style={{ height: 100 }}>
 
       {/* ── Map tile — rotates with heading ── */}
       <div
@@ -102,8 +121,14 @@ const BikeMap = ({ client, stepId, onClick }) => {
       >
         <iframe
           src="https://www.openstreetmap.org/export/embed.html?bbox=80.18%2C13.02%2C80.28%2C13.08&layer=mapnik"
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ border: 0, opacity: 0.85 }}
+          className="absolute opacity-85 pointer-events-auto"
+          style={{
+            border: 0,
+            top: -40,
+            left: -40,
+            width: 'calc(100% + 80px)',
+            height: 'calc(100% + 80px)'
+          }}
           title="Location Map"
         />
       </div>
@@ -160,7 +185,7 @@ const BikeMap = ({ client, stepId, onClick }) => {
       <div className="absolute pointer-events-none flex flex-col items-center" style={{ right: '10%', top: '12%', zIndex: 5 }}>
         {/* Name label */}
         <div
-          className="bg-white text-[8px] font-black text-red-600 px-1.5 py-[2px] rounded-md shadow-md mb-0.5 whitespace-nowrap border border-red-100"
+          className="bg-white text-[10px] font-black text-red-600 px-1.5 py-[2px] rounded-md shadow-md mb-0.5 whitespace-nowrap border border-red-100"
           style={{ boxShadow: '0 2px 8px rgba(220,38,38,0.2)' }}
         >
           📍 {client?.clientName?.split(' ').slice(0,2).join(' ') ?? 'Destination'}
@@ -195,20 +220,20 @@ const BikeMap = ({ client, stepId, onClick }) => {
         {stepId === 'going' && (
           <>
             <div className="absolute -inset-3 rounded-full opacity-20 animate-ping-slow"
-              style={{ backgroundColor: `rgb(${STEPS[0].glowColor})` }} />
+              style={{ backgroundColor: `rgb(${steps.find(s=>s.id==='going').glowColor})` }} />
             <div className="absolute -inset-2 rounded-full opacity-15 animate-ping-fast"
-              style={{ backgroundColor: `rgb(${STEPS[0].glowColor})`, animationDelay: '0.5s' }} />
+              style={{ backgroundColor: `rgb(${steps.find(s=>s.id==='going').glowColor})`, animationDelay: '0.5s' }} />
           </>
         )}
         {stepId === 'near' && (
           <div className="absolute -inset-3 rounded-full opacity-25 animate-ping-slow"
-            style={{ backgroundColor: `rgb(${STEPS[1].glowColor})` }} />
+            style={{ backgroundColor: `rgb(${steps.find(s=>s.id==='near').glowColor})` }} />
         )}
 
         {/* Collector callout bubble (above rider) */}
         <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap">
           <div
-            className="bg-white text-[8px] font-black px-1.5 py-[2px] rounded-md shadow-md border flex items-center gap-0.5"
+            className="bg-white text-[9px] font-black px-1.5 py-[2px] rounded-md shadow-md border flex items-center gap-0.5"
             style={{
               borderColor: stepId === 'going' ? 'rgba(37,99,235,0.3)' :
                           stepId === 'near' ? 'rgba(245,158,11,0.3)' : 'rgba(34,197,94,0.3)',
@@ -217,7 +242,7 @@ const BikeMap = ({ client, stepId, onClick }) => {
                      stepId === 'near' ? '#b45309' : '#15803d',
             }}
           >
-            <span style={{ fontSize: 7 }}>🚴</span>
+            <span style={{ fontSize: 8 }}>🚴</span>
             <span>Collector</span>
           </div>
           {/* Tail arrow */}
@@ -232,30 +257,24 @@ const BikeMap = ({ client, stepId, onClick }) => {
         {/* Main rider avatar */}
         <div
           className={`relative flex items-center justify-center border-[2.5px] border-white ${
-            stepId === 'going'   ? 'bg-blue-600'    :
-            stepId === 'near'    ? 'bg-amber-500'   :
-            stepId === 'stop'    ? 'bg-orange-500'  :
-            stepId === 'collect' ? 'bg-emerald-600' : 'bg-green-600'
+            steps.find(s => s.id === stepId)?.bgClass || 'bg-slate-600'
           }`}
           style={{
             width: 36,
             height: 36,
             borderRadius: '50% 50% 50% 10%',
             boxShadow: `0 0 0 2px rgba(${
-              stepId === 'going'   ? STEPS[0].glowColor :
-              stepId === 'near'    ? STEPS[1].glowColor :
-              stepId === 'stop'    ? STEPS[2].glowColor :
-              stepId === 'collect' ? STEPS[3].glowColor : STEPS[4].glowColor
+              steps.find(s => s.id === stepId)?.glowColor || '0,0,0'
             },0.4), 0 4px 14px rgba(0,0,0,0.25)`,
             animation: stepId === 'going' ? 'bike-bob 1.6s ease-in-out infinite' :
                        stepId === 'near'  ? 'bounce-subtle 1.2s ease-in-out infinite' : 'none',
             transform: `rotate(${
-              (stepId === 'stop' || stepId === 'collect' || stepId === 'done') ? 0 : smoothBearing * 0.3
+              (stepId === 'near' || stepId === 'collect' || stepId === 'deliver' || stepId === 'verify' || stepId === 'done') ? 0 : smoothBearing * 0.3
             }deg)`,
             transition: 'transform 0.5s ease-out',
           }}
         >
-          {(stepId === 'stop' || stepId === 'collect' || stepId === 'done')
+          {(stepId === 'near' || stepId === 'collect' || stepId === 'deliver' || stepId === 'verify' || stepId === 'done')
             ? <ParkingSquare size={16} className="text-white" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))' }} />
             : <Bike size={16} className="text-white" style={{ transform: 'scaleX(-1)', filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.3))' }} />
           }
@@ -300,14 +319,29 @@ const BikeMap = ({ client, stepId, onClick }) => {
           <Navigation size={9} /> Full Map
         </div>
       </div>
+
+      {/* Floating Open Routes Button (Bottom Right) */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(); // Opens routes screen
+        }}
+        className="absolute bottom-3 right-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-3 py-1.5 shadow-md transition-all active:scale-95 z-10"
+        style={{
+          borderRadius: '5px',
+          boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
+        }}
+      >
+        Open Routes
+      </button>
     </div>
   );
 };
 
 // ─── Animated Stepper ─────────────────────────────────────────────────────────
-const StatusStepper = ({ currentStepIndex }) => (
+const StatusStepper = ({ currentStepIndex, steps }) => (
   <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100">
-    {STEPS.map((step, idx) => {
+    {steps.map((step, idx) => {
       const done   = idx < currentStepIndex;
       const active = idx === currentStepIndex;
       const Icon   = step.icon;
@@ -339,7 +373,7 @@ const StatusStepper = ({ currentStepIndex }) => (
             </span>
           </div>
 
-          {idx < STEPS.length - 1 && (
+          {idx < steps.length - 1 && (
             <div className="flex-1 h-[3px] mx-1 rounded-full overflow-hidden bg-slate-100" style={{ position: 'relative' }}>
               <div
                 className="h-full rounded-full"
@@ -370,22 +404,26 @@ const NotificationToast = ({ step, client, prevStepId }) => {
   }, [step.id]);
 
   const messages = {
-    going:   `Collector is heading to ${client.clientName}`,
-    near:    `Collector arrived near ${client.clientName}`,
-    stop:    `Bike parked — entering ${client.clientName}`,
+    collect_lab: `Collecting materials from Lab`,
+    going:   `Executive is heading to ${client.clientName}`,
+    near:    `Executive arrived near ${client.clientName}`,
+    verify:  `Verifying identity at ${client.clientName}`,
     collect: `Collecting sample at ${client.clientName}`,
-    done:    `Sample collected from ${client.clientName}!`,
+    deliver: `Delivering items to ${client.clientName}`,
+    done:    `Task completed at ${client.clientName}!`,
   };
-  const emojis = { going: '🚴', near: '📍', stop: '🅿️', collect: '📦', done: '✅' };
+  const emojis = { collect_lab: '🏢', going: '🚴', near: '📍', verify: '🛡️', collect: '📦', deliver: '🤝', done: '✅' };
   const gradients = {
+    collect_lab: 'linear-gradient(135deg,#4338ca,#6366f1)',
     going:   'linear-gradient(135deg,#1e40af,#2563eb)',
     near:    'linear-gradient(135deg,#b45309,#f59e0b)',
-    stop:    'linear-gradient(135deg,#c2410c,#f97316)',
+    verify:  'linear-gradient(135deg,#7e22ce,#a855f7)',
     collect: 'linear-gradient(135deg,#065f46,#10b981)',
+    deliver: 'linear-gradient(135deg,#065f46,#10b981)',
     done:    'linear-gradient(135deg,#15803d,#22c55e)',
   };
   const glows = {
-    going:   '37,99,235', near: '245,158,11', stop: '249,115,22', collect: '16,185,129', done: '34,197,94',
+    collect_lab: '99,102,241', going: '37,99,235', near: '245,158,11', verify: '168,85,247', collect: '16,185,129', deliver: '16,185,129', done: '34,197,94',
   };
 
   return (
@@ -430,18 +468,69 @@ const NotificationToast = ({ step, client, prevStepId }) => {
 // ─── Main ClientDetails ───────────────────────────────────────────────────────
 const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
   const [stepIndex, setStepIndex] = useState(0);
-  const [scanned, setScanned] = useState(false);
   const [prevStepId, setPrevStepId] = useState(null);
+  const [scanned, setScanned] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [chatMsg, setChatMsg] = useState("");
+  const [otp, setOtp] = useState('');
+  const [signature, setSignature] = useState(null);
+  const [otpError, setOtpError] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  
+  const activeSteps = client?.taskType === 'delivery' ? DELIVERY_STEPS : COLLECTION_STEPS;
+
+  const [chatHistory, setChatHistory] = useState(
+    client?.chatHistory || [
+      { sender: 'client', text: `Hi, when will you arrive at ${client?.clientName}?`, time: '10:45 AM' },
+      { sender: 'me', text: 'I am on my way, arriving in 5 mins.', time: '10:46 AM', status: 'read' }
+    ]
+  );
+
+  useEffect(() => {
+    if (client) {
+      setChatHistory(
+        client.chatHistory || [
+          { sender: 'client', text: `Hi, when will you arrive at ${client.clientName}?`, time: '10:45 AM' },
+          { sender: 'me', text: 'I am on my way, arriving in 5 mins.', time: '10:46 AM', status: 'read' }
+        ]
+      );
+    }
+  }, [client]);
 
   if (!client) return null;
 
-  const currentStep = STEPS[stepIndex];
-  const isLastStep  = stepIndex === STEPS.length - 1;
+  // Safe fallback if out of bounds
+  const currentStep = activeSteps[stepIndex] || activeSteps[activeSteps.length - 1];
+  const isLastStep  = stepIndex >= activeSteps.length - 1;
 
   const advanceStep = () => {
-    if (stepIndex < STEPS.length - 1) {
-      setPrevStepId(currentStep.id);
-      setStepIndex(i => i + 1);
+    setStepIndex(currentIndex => {
+      if (currentIndex < activeSteps.length - 1) {
+        setPrevStepId(activeSteps[currentIndex].id);
+        return currentIndex + 1;
+      }
+      return currentIndex;
+    });
+  };
+
+  const handleNear = () => {
+    setStepIndex(currentIndex => {
+      if (currentIndex === 0) { // Only transition from 'going' (0) to 'near' (1)
+        setPrevStepId(activeSteps[0].id);
+        return 1;
+      }
+      return currentIndex;
+    });
+  };
+
+  const handleVerifyOtp = () => {
+    if (otp === '1234') {
+      setOtpError(false);
+      advanceStep();
+    } else {
+      setOtpError(true);
     }
   };
 
@@ -450,17 +539,32 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
     setTimeout(() => {
       setScanned(true);
       setPrevStepId(currentStep.id);
-      setStepIndex(STEPS.length - 1);
+      setStepIndex(activeSteps.length - 1);
     }, 800);
+  };
+
+  const handleCompletePickup = () => {
+    if (client?.taskType === 'delivery') {
+      setShowWhatsAppModal(true);
+      // Automatically close the modal and the details page after a delay
+      setTimeout(() => {
+        setShowWhatsAppModal(false);
+        onClose();
+      }, 3500);
+    } else {
+      onClose();
+    }
   };
 
   const getActionButton = () => {
     switch (currentStep.id) {
-      case 'going':   return { label: "I'm Near the Client",  sublabel: 'Tap when < 200m away',    onClick: advanceStep,   gradient: 'linear-gradient(135deg,#b45309,#f59e0b)', glow: '245,158,11' };
-      case 'near':    return { label: 'Stop Bike & Enter',    sublabel: 'Park bike securely',       onClick: advanceStep,   gradient: 'linear-gradient(135deg,#c2410c,#f97316)', glow: '249,115,22' };
-      case 'stop':    return { label: 'Collect Sample',       sublabel: 'Scan barcode to verify',   onClick: handleCollect, gradient: 'linear-gradient(135deg,#065f46,#10b981)', glow: '16,185,129' };
+      case 'collect_lab': return { label: 'Collect Materials', sublabel: 'At Lab', onClick: advanceStep, gradient: 'linear-gradient(135deg,#4338ca,#6366f1)', glow: '99,102,241' };
+      case 'going':   return { label: 'En Route (GPS Auto-Tracking)', sublabel: 'Auto-arriving when < 200m...', onClick: null, disabled: true, gradient: 'linear-gradient(135deg,#64748b,#94a3b8)', glow: '148,163,184' };
+      case 'near':    return { label: client?.taskType === 'delivery' ? 'Verify Identity' : 'Collect Sample', sublabel: client?.taskType === 'delivery' ? 'Proceed to OTP' : 'Scan barcode to verify', onClick: client?.taskType === 'delivery' ? advanceStep : handleCollect, gradient: 'linear-gradient(135deg,#065f46,#10b981)', glow: '16,185,129' };
+      case 'verify':  return null; // Handled inline by OTP form
+      case 'deliver': return { label: 'Handover & Sign', sublabel: 'Client to sign and confirm', onClick: () => { setSignature('signed'); advanceStep(); }, gradient: 'linear-gradient(135deg,#15803d,#22c55e)', glow: '34,197,94'  };
       case 'collect': return { label: 'Sample Collected ✅',  sublabel: 'Tap to confirm collection',onClick: advanceStep,   gradient: 'linear-gradient(135deg,#15803d,#22c55e)', glow: '34,197,94'  };
-      case 'done':    return { label: 'Complete Pickup 🎉',   sublabel: 'All steps finished',       onClick: onClose,       gradient: 'linear-gradient(135deg,#1e40af,#2563eb)', glow: '37,99,235'  };
+      case 'done':    return { label: client?.taskType === 'delivery' ? 'Complete Delivery 🎉' : 'Complete Pickup 🎉',   sublabel: 'All steps finished',       onClick: handleCompletePickup, gradient: 'linear-gradient(135deg,#1e40af,#2563eb)', glow: '37,99,235'  };
       default: return null;
     }
   };
@@ -471,20 +575,20 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
     <div className="absolute inset-0 bg-slate-50 z-[60] flex flex-col overflow-hidden" style={{ animation: 'slide-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both' }}>
 
       {/* ── Header ── */}
-      <div className="bg-white px-4 pt-12 pb-3 shadow-sm z-10 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="bg-white px-4 pt-12 pb-3 shadow-sm z-10 flex items-center justify-between gap-3 border-b border-slate-100">
+        <div className="flex items-center gap-2.5 min-w-0">
           <button onClick={onClose} className="p-2 -ml-2 shrink-0 text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
             <ArrowLeft size={22} />
           </button>
           <div className="flex flex-col min-w-0">
-            <h1 className="text-sm font-bold text-slate-800 truncate leading-tight">{client.clientName}</h1>
-            <span className="text-[10px] text-slate-500 font-medium">{client.location}</span>
+            <h1 className="text-base font-black text-slate-800 truncate leading-tight">{client.clientName}</h1>
+            <span className="text-[11px] text-slate-500 font-bold mt-0.5">{client.location}</span>
           </div>
         </div>
 
         {/* Animated live status badge */}
         <div
-          className={`shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold flex items-center gap-1 ${currentStep.lightBg} ${currentStep.textClass}`}
+          className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1.5 ${currentStep.lightBg} ${currentStep.textClass}`}
           style={{
             boxShadow: `0 0 0 2px rgba(${currentStep.glowColor},0.2)`,
             transition: 'all 0.3s ease',
@@ -499,18 +603,18 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
       </div>
 
       {/* ── Stepper ── */}
-      <StatusStepper currentStepIndex={stepIndex} />
+      <StatusStepper currentStepIndex={stepIndex} steps={activeSteps} />
 
       {/* ── Notification toast ── */}
       <NotificationToast step={currentStep} client={client} prevStepId={prevStepId} />
 
       {/* ── Body ── */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide pb-32 mt-3 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto scrollbar-hide pb-44 mt-3 flex flex-col gap-3">
 
         {/* Map card */}
-        <div className="mx-4 rounded-3xl overflow-hidden border border-slate-200"
+        <div className="mx-4 rounded-[5px] overflow-hidden border border-slate-200 shrink-0"
           style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
-          <BikeMap client={client} stepId={currentStep.id} onClick={() => setCurrentScreen('routes')} />
+          <BikeMap client={client} stepId={currentStep.id} onClick={() => setCurrentScreen('routes')} onNear={handleNear} steps={activeSteps} />
 
           {/* Distance strip */}
           <div
@@ -531,23 +635,31 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
         </div>
 
         {/* Client info card */}
-        <div className="mx-4 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden" style={{ animation: 'slide-up 0.4s 0.1s both' }}>
+        <div className="mx-4 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden shrink-0" style={{ animation: 'slide-up 0.4s 0.1s both' }}>
           <div className="px-4 py-4">
             <div className="flex justify-between items-center mb-3">
               <div>
-                <h2 className="text-base font-black text-slate-800 mb-0.5">{client.clientName}</h2>
-                <div className="flex items-center gap-1 text-xs font-medium text-slate-500">
-                  <MapPin size={11} />
+                <h2 className="text-sm font-black text-slate-800 mb-0.5">{client.clientName}</h2>
+                <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
+                  <MapPin size={10} />
                   <span>{client.location}</span>
                 </div>
               </div>
-              <button className="bg-blue-50 text-blue-600 p-2.5 rounded-full hover:bg-blue-100 transition-colors shrink-0"
-                style={{ boxShadow: '0 2px 8px rgba(37,99,235,0.15)' }}>
-                <Phone size={16} />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button 
+                  onClick={() => setShowChat(true)}
+                  className="p-1.5 rounded-full hover:bg-slate-100 transition-colors">
+                  <img src="https://cdn-icons-png.flaticon.com/512/7637/7637102.png" alt="Chat" className="w-[24px] h-[24px] object-contain drop-shadow-sm" />
+                </button>
+                <a 
+                  href={`tel:${client.phone || '+1234567890'}`}
+                  className="p-1.5 rounded-full hover:bg-slate-50 transition-colors flex items-center justify-center">
+                  <img src="https://cdn-icons-png.flaticon.com/512/9946/9946341.png" alt="Call" className="w-[24px] h-[24px] object-contain drop-shadow-sm" />
+                </a>
+              </div>
             </div>
 
-            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 mb-3">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 mb-3">
               <h3 className="text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
                 <Package size={13} /> Sample Requirements
               </h3>
@@ -564,7 +676,7 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
               )}
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-medium bg-amber-50 p-2.5 rounded-2xl border border-amber-100 text-amber-800">
+            <div className="flex items-center gap-2 text-xs font-medium bg-amber-50 p-2.5 rounded-xl border border-amber-100 text-amber-800">
               <Clock size={14} className="text-amber-500 shrink-0" />
               <span>Requested at {client.time}</span>
             </div>
@@ -573,13 +685,13 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
 
         {/* Scan/photo actions (stop → done) */}
         {(currentStep.id === 'stop' || currentStep.id === 'collect' || currentStep.id === 'done') && (
-          <div className="mx-4 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden" style={{ animation: 'slide-up 0.4s 0.15s both' }}>
+          <div className="mx-4 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden shrink-0" style={{ animation: 'slide-up 0.4s 0.15s both' }}>
             <div className="px-4 py-4">
               <h2 className="text-sm font-bold text-slate-800 mb-3">Collection Actions</h2>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => { setCurrentScreen('scan'); setTimeout(() => { setScanned(true); setStepIndex(STEPS.length - 1); }, 600); }}
-                  className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95 ${
+                  onClick={() => { setCurrentScreen('scan'); setTimeout(() => { setScanned(true); setStepIndex(activeSteps.length - 1); }, 600); }}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 ${
                     scanned ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-blue-500 bg-blue-50 text-blue-700'
                   }`}
                   style={{ boxShadow: scanned ? '0 4px 16px rgba(16,185,129,0.2)' : '0 4px 16px rgba(37,99,235,0.15)' }}
@@ -593,7 +705,7 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
 
                 <button
                   onClick={() => setCurrentScreen('scan')}
-                  className="flex flex-col items-center justify-center p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-600 active:scale-95 transition-all"
+                  className="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white text-slate-600 active:scale-95 transition-all"
                 >
                   <Camera size={22} className="mb-1.5" />
                   <span className="font-bold text-[11px] text-center">Upload Photo</span>
@@ -604,10 +716,66 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
           </div>
         )}
 
+        {/* OTP Verification UI */}
+        {currentStep.id === 'verify' && (
+          <div className="mx-4 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden shrink-0 p-4" style={{ animation: 'slide-up 0.4s 0.15s both' }}>
+            <h2 className="text-sm font-bold text-slate-800 mb-2">Verify Identity</h2>
+            <p className="text-[11px] text-slate-500 mb-4 leading-tight">Enter the 4-digit OTP shared by the client.</p>
+            <div className="flex flex-col gap-3">
+              <input 
+                type="text" 
+                maxLength={4}
+                value={otp}
+                onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                placeholder="____" 
+                className={`text-center text-2xl font-black tracking-[0.5em] p-3 rounded-xl border-2 outline-none transition-colors ${otpError ? 'border-red-400 bg-red-50 text-red-600 focus:border-red-500' : 'border-slate-200 focus:border-blue-500 bg-slate-50'}`}
+              />
+              {otpError && <p className="text-[10px] font-bold text-red-500 text-center -mt-1">Invalid OTP, try 1234</p>}
+              <button 
+                onClick={handleVerifyOtp}
+                disabled={otp.length !== 4}
+                className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+                style={{ boxShadow: otp.length === 4 ? '0 4px 16px rgba(147,51,234,0.3)' : 'none' }}
+              >
+                Verify OTP
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Digital Signature UI */}
+        {currentStep.id === 'deliver' && (
+          <div className="mx-4 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden shrink-0 p-4" style={{ animation: 'slide-up 0.4s 0.15s both' }}>
+            <h2 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+              <PenTool size={16} className="text-emerald-600" /> Client Signature
+            </h2>
+            <p className="text-[11px] text-slate-500 mb-3 leading-tight">Please ask the client to sign below to confirm receipt of the materials.</p>
+            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl h-32 flex flex-col items-center justify-center text-slate-400 relative">
+              {signature ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {/* Simulated Signature Line */}
+                  <svg viewBox="0 0 100 40" className="w-full h-full p-4 opacity-70">
+                    <path d="M10,20 Q30,5 50,20 T90,20" fill="none" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                </div>
+              ) : (
+                <span className="text-[10px] font-semibold">Sign Here</span>
+              )}
+            </div>
+            <button 
+              onClick={() => { setSignature('signed'); advanceStep(); }}
+              className="mt-3 w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-xs active:scale-[0.98] transition-all"
+              style={{ boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}
+            >
+              Confirm Delivery
+            </button>
+          </div>
+        )}
+
         {/* Guidance card */}
         {!isLastStep && (
           <div
-            className={`mx-4 ${currentStep.lightBg} border ${currentStep.borderClass}/30 rounded-2xl p-3 flex items-start gap-2.5`}
+            className={`mx-4 ${currentStep.lightBg} border ${currentStep.borderClass}/30 rounded-2xl p-3 flex items-start gap-2.5 shrink-0`}
             style={{ animation: 'slide-up 0.4s 0.2s both' }}
           >
             <AlertCircle size={15} className={`${currentStep.textClass} shrink-0 mt-0.5`} />
@@ -616,9 +784,12 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
                 {currentStep.fullLabel} — {currentStep.subLabel}
               </p>
               <p className="text-[10px] text-slate-500 font-medium">
+                {currentStep.id === 'collect_lab' && 'Verify materials at the lab before departing.'}
                 {currentStep.id === 'going'   && 'Tap the button below once you are within 200m of the client.'}
                 {currentStep.id === 'near'    && 'Confirm your arrival and securely park your bike before entering.'}
                 {currentStep.id === 'stop'    && 'Scan the sample barcode to verify the collected specimens.'}
+                {currentStep.id === 'verify'  && 'Ask the client for the OTP sent to their registered mobile number.'}
+                {currentStep.id === 'deliver' && 'Ensure all items are handed over securely and get the digital signature.'}
                 {currentStep.id === 'collect' && 'Confirm all samples are bagged. Tap to mark as collected.'}
               </p>
             </div>
@@ -627,23 +798,171 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
       </div>
 
       {/* ── Footer CTA ── */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 pb-5 bg-white border-t border-slate-100"
+      <div className="absolute bottom-0 left-0 right-0 p-4 pb-5 bg-white border-t border-slate-100 flex flex-col gap-2"
         style={{ boxShadow: '0 -12px 40px rgba(0,0,0,0.06)' }}>
+        
+        {(currentStep.id === 'near' || currentStep.id === 'collect') && (
+          <button 
+            onClick={() => setCurrentScreen('scan')}
+            className="w-full py-2.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-100 active:scale-95 transition-all shadow-sm"
+          >
+            <ScanBarcode size={16} />
+            <span>Scan Barcode</span>
+          </button>
+        )}
+
         {actionBtn && (
           <button
             onClick={actionBtn.onClick}
-            className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex flex-col items-center active:scale-[0.97] transition-transform"
+            disabled={actionBtn.disabled}
+            className={`w-full py-3 rounded-xl font-bold text-xs text-white flex flex-col items-center transition-all ${
+              actionBtn.disabled ? 'opacity-75 cursor-not-allowed scale-100' : 'active:scale-[0.97]'
+            }`}
             style={{
               background: actionBtn.gradient,
-              boxShadow: `0 6px 28px rgba(${actionBtn.glow},0.45)`,
-              animation: 'btn-glow 2.5s ease-in-out infinite',
+              boxShadow: actionBtn.disabled ? 'none' : `0 6px 28px rgba(${actionBtn.glow},0.45)`,
+              animation: actionBtn.disabled ? 'none' : 'btn-glow 2.5s ease-in-out infinite',
             }}
           >
             <span>{actionBtn.label}</span>
-            <span className="text-[9px] font-semibold opacity-75 mt-0.5">{actionBtn.sublabel}</span>
+            <span className="text-[8px] font-semibold opacity-75 mt-0.5">{actionBtn.sublabel}</span>
           </button>
         )}
       </div>
+
+      {/* ── Chat Modal ── */}
+      {showChat && (
+        <div className="absolute inset-0 z-[100] bg-white flex flex-col animate-fade-in-up">
+          {/* Header */}
+          <div className="flex items-center gap-3 pt-12 pb-4 px-4 bg-blue-600 border-b border-blue-700 shadow-sm shrink-0">
+            <button onClick={() => setShowChat(false)} className="p-1 hover:bg-blue-700 rounded-full transition-colors shrink-0">
+              <ArrowLeft size={20} className="text-white" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-bold text-sm text-white leading-tight truncate">{client.clientName}</h2>
+              <p className="text-[10px] text-blue-100 font-medium">Online</p>
+            </div>
+            <a href={`tel:${client.phone || '+1234567890'}`} className="p-1.5 hover:bg-blue-700 rounded-full transition-colors">
+              <img src="https://cdn-icons-png.flaticon.com/512/9946/9946341.png" alt="Call" className="w-[24px] h-[24px] object-contain drop-shadow-sm brightness-110" />
+            </a>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 bg-slate-50 flex flex-col gap-3">
+            {chatHistory.map((msg, idx) => (
+              <div key={idx} className={`flex flex-col max-w-[80%] ${msg.sender === 'me' ? 'self-end items-end' : 'self-start items-start'}`}>
+                <div className={`px-3 py-2 rounded-2xl shadow-sm text-sm ${msg.sender === 'me' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white text-slate-800 border border-slate-100 rounded-tl-sm'}`}>
+                  {msg.text}
+                </div>
+                <div className="flex items-center gap-1 mt-1 px-1">
+                  <span className="text-[9px] text-slate-400 font-medium">{msg.time}</span>
+                  {msg.sender === 'me' && (
+                    <CheckCheck size={12} className={msg.status === 'read' ? 'text-blue-500' : 'text-slate-400'} />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Input */}
+          <div className="p-3 bg-white border-t border-slate-100 shrink-0 pb-6 relative">
+            {showAttachMenu && (
+              <div className="absolute bottom-full left-4 mb-2 bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-slate-100 p-2 flex flex-col gap-1 w-44 animate-fade-in-up z-10 origin-bottom-left">
+                <button 
+                  onClick={() => setShowAttachMenu(false)}
+                  className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-700 text-sm font-medium w-full text-left">
+                  <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <FileText size={16} />
+                  </div>
+                  Document
+                </button>
+                <button 
+                  onClick={() => setShowAttachMenu(false)}
+                  className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-700 text-sm font-medium w-full text-left">
+                  <div className="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                    <ImageIcon size={16} />
+                  </div>
+                  Photos
+                </button>
+                <button 
+                  onClick={() => setShowAttachMenu(false)}
+                  className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-700 text-sm font-medium w-full text-left">
+                  <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Camera size={16} />
+                  </div>
+                  Camera
+                </button>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2 bg-slate-100 rounded-full px-2 py-1.5 border border-slate-200 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all relative z-20">
+              <button 
+                onClick={() => setShowAttachMenu(!showAttachMenu)}
+                className={`p-1.5 rounded-full transition-colors shrink-0 ${showAttachMenu ? 'bg-blue-100 text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                <Paperclip size={18} />
+              </button>
+              <input 
+                type="text"
+                placeholder="Type a message..." 
+                className="flex-1 bg-transparent border-none focus:outline-none text-sm text-slate-700 placeholder-slate-400 w-full min-w-0 px-1"
+                value={chatMsg}
+                onChange={(e) => setChatMsg(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && chatMsg.trim()) {
+                    setChatHistory([...chatHistory, { sender: 'me', text: chatMsg, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), status: 'sent' }]);
+                    setChatMsg('');
+                  }
+                }}
+              />
+              <button 
+                onClick={() => {
+                  if (chatMsg.trim()) {
+                    setChatHistory([...chatHistory, { sender: 'me', text: chatMsg, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), status: 'sent' }]);
+                    setChatMsg('');
+                  }
+                }}
+                className={`p-2 rounded-full transition-colors shrink-0 ${chatMsg.trim() ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                <svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" xmlSpace="preserve" className="w-[16px] h-[16px] ml-0.5">
+                  <path d="M2.1,44.5l4.4-16.3h18.6c0.5,0,1-0.5,1-1v-2c0-0.5-0.5-1-1-1H6.5l-4.3-16l0,0C2.1,8,2,7.7,2,7.4
+                    C2,6.7,2.7,6,3.5,6.1c0.2,0,0.3,0.1,0.5,0.1l0,0l0,0l0,0l45,18.5c0.6,0.2,1,0.8,1,1.4s-0.4,1.1-0.9,1.3l0,0L4,46.4l0,0
+                    c-0.2,0.1-0.4,0.1-0.6,0.1C2.6,46.4,2,45.8,2,45C2,44.8,2,44.7,2.1,44.5L2.1,44.5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── WhatsApp Success Modal ── rendered here where state is in scope ── */}
+      {showWhatsAppModal && (
+        <div className="absolute inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm">
+          <div className="bg-white rounded-[24px] p-6 w-full max-w-sm flex flex-col items-center text-center shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-[#25D366]"></div>
+            <div className="w-20 h-20 bg-[#25D366]/10 rounded-full flex items-center justify-center mb-4 relative">
+              <svg viewBox="0 0 24 24" className="w-10 h-10 text-[#25D366]" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51h-.57c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              <div className="absolute bottom-0 right-0 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <CheckCircle2 size={18} className="text-[#25D366]" />
+              </div>
+            </div>
+            <h2 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Delivery Confirmed! ✅</h2>
+            <p className="text-sm font-medium text-slate-500 mb-5 leading-relaxed">
+              WhatsApp notification sent to <strong className="text-slate-700">{client.clientName}</strong> &amp; <strong className="text-slate-700">Central Lab</strong>.
+            </p>
+            <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <span>Client Received Confirmation</span>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>Lab Received Handover Status</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

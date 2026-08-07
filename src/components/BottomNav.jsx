@@ -55,7 +55,7 @@ const BottomNav = ({ currentScreen, setCurrentScreen }) => {
     { id: 'home', icon: CustomHomeIcon, label: 'Home' },
     { id: 'routes', icon: CustomRoutesIcon, label: 'Routes' },
     { id: 'scan', icon: CustomScanIcon, label: 'Scan' },
-    { id: 'tasks', icon: CustomTasksIcon, label: 'Tasks' },
+    { id: 'tasks', icon: CustomTasksIcon, label: 'History' },
     { id: 'profile', icon: CustomProfileIcon, label: 'Profile' },
   ];
 

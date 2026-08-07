@@ -44,8 +44,8 @@ const FilterSheet = ({ isOpen, onClose, onApply, initialFilter = 'date' }) => {
                 : 'border-slate-100 hover:bg-slate-50 active:bg-slate-100'
             }`}
           >
-            <div className={`p-2 rounded-lg ${selectedFilter === 'date' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30' : 'bg-blue-100 text-blue-600'}`}>
-              <Calendar size={20} />
+            <div className={`p-2 rounded-lg flex items-center justify-center ${selectedFilter === 'date' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30' : 'bg-blue-100 text-blue-600'}`}>
+              <img src="https://cdn-icons-png.flaticon.com/512/591/591576.png" alt="Date" className="w-[20px] h-[20px] object-contain" />
             </div>
             <div className="flex flex-col flex-1">
               <span className="font-bold text-slate-800 text-[13px] leading-tight">Date & Time</span>
@@ -64,8 +64,8 @@ const FilterSheet = ({ isOpen, onClose, onApply, initialFilter = 'date' }) => {
                 : 'border-slate-100 hover:bg-slate-50 active:bg-slate-100'
             }`}
           >
-            <div className={`p-2 rounded-lg ${selectedFilter === 'distance' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30' : 'bg-emerald-100 text-emerald-600'}`}>
-              <Map size={20} />
+            <div className={`p-2 rounded-lg flex items-center justify-center ${selectedFilter === 'distance' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30' : 'bg-emerald-100 text-emerald-600'}`}>
+              <img src="https://cdn-icons-png.flaticon.com/512/3710/3710274.png" alt="Distance" className="w-[20px] h-[20px] object-contain" />
             </div>
             <div className="flex flex-col flex-1">
               <span className="font-bold text-slate-800 text-[13px] leading-tight">Distance</span>

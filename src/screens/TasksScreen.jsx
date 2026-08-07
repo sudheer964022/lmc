@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Menu, Calendar, MapPin, Search } from 'lucide-react';
 import { emergencyPickups, newSamples } from '../data/mockData';
+import CalendarSheet from '../components/CalendarSheet';
 
 const TasksScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   // Combine mock data
   const allTasks = [...emergencyPickups, ...newSamples];
@@ -41,14 +43,14 @@ const TasksScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
         >
           <Menu size={20} />
         </button>
-        <h1 className="font-bold text-lg">Tasks</h1>
+        <h1 className="font-bold text-lg">History</h1>
         <div className="w-10 h-10"></div> {/* Spacer */}
       </div>
 
       {/* Date Filter & Search Row */}
       <div className="bg-white px-4 py-3 shadow-sm z-10">
         <div className="flex gap-2 items-center mb-3">
-          <div className="flex-1 bg-slate-100 rounded-xl px-3 py-2 flex items-center gap-2">
+          <div className="flex-1 bg-slate-100 rounded-xl px-3 flex items-center gap-2 h-8">
             <Search size={16} className="text-slate-400" />
             <input 
               type="text" 
@@ -58,14 +60,11 @@ const TasksScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="relative">
-            <input 
-              type="date" 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <button className="bg-blue-50 text-blue-700 p-2.5 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5">
+          <div>
+            <button 
+              onClick={() => setIsCalendarOpen(true)}
+              className="bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors flex items-center justify-center active:scale-95 h-8 w-8 shrink-0"
+            >
               <Calendar size={16} />
             </button>
           </div>
@@ -87,13 +86,13 @@ const TasksScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
           {[
             { id: 'all', label: 'All' },
             { id: 'pending', label: 'Pending' },
-            { id: 'high', label: 'High Priority' },
-            { id: 'completed', label: 'Completed' }
+            { id: 'high', label: 'High' },
+            { id: 'completed', label: 'Done' }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-1.5 text-[10px] sm:text-xs font-bold rounded-lg transition-colors truncate px-1 ${
+              className={`flex-1 py-1.5 text-[10px] sm:text-xs font-extrabold rounded-lg transition-colors truncate px-1 ${
                 activeTab === tab.id ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
@@ -107,30 +106,30 @@ const TasksScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
       <div className="flex-1 overflow-y-auto scrollbar-hide bg-slate-50 flex flex-col p-4 gap-3">
         {filteredTasks.length > 0 ? (
           filteredTasks.map((item, idx) => (
-            <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col gap-2 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer shrink-0">
+            <div key={idx} className="bg-white rounded-[14px] p-3 shadow-sm border border-slate-100 flex flex-col gap-1.5 relative overflow-hidden active:scale-[0.98] transition-transform cursor-pointer shrink-0">
               {/* Card Header */}
               <div className="flex justify-between items-start">
-                <div className="flex gap-3">
-                  <div className={`w-10 h-10 rounded-full ${item.colorClass || 'bg-slate-100'} flex items-center justify-center font-bold text-sm shrink-0`}>
+                <div className="flex gap-2.5">
+                  <div className={`w-8 h-8 rounded-full ${item.colorClass || 'bg-slate-100'} flex items-center justify-center font-bold text-xs shrink-0`}>
                     {item.initials || 'C'}
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800 text-sm">{item.clientName}</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>
+                    <h3 className="font-bold text-slate-800 text-[13px] leading-tight">{item.clientName}</h3>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{item.description}</p>
                   </div>
                 </div>
-                {item.badge && (
-                  <div className={`${item.badge === 'New' ? 'bg-indigo-500' : 'bg-red-500'} text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0`}>
-                    {item.badge}
+                {(item.badge || activeTab === 'completed') && (
+                  <div className={`${activeTab === 'completed' ? 'bg-emerald-500' : item.badge === 'New' ? 'bg-indigo-500' : item.badge === 'Delivery' ? 'bg-purple-500' : 'bg-red-500'} text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0`}>
+                    {activeTab === 'completed' && item.taskType === 'delivery' ? 'Delivered' : activeTab === 'completed' ? 'Collected' : item.badge}
                   </div>
                 )}
               </div>
               
               {/* Samples */}
               {item.samples && item.samples.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-1 ml-13">
+                <div className="flex flex-wrap gap-1 mt-0.5 ml-10">
                   {item.samples.map((s, i) => (
-                    <span key={i} className="bg-slate-50 border border-slate-100 text-slate-600 px-2 py-0.5 rounded-lg text-[9px] font-semibold">
+                    <span key={i} className={`px-1.5 py-[1px] rounded-md text-[8px] font-semibold border ${item.taskType === 'delivery' ? 'bg-purple-50 border-purple-100 text-purple-600' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
                       {s}
                     </span>
                   ))}
@@ -140,7 +139,7 @@ const TasksScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
               <div className="h-px bg-slate-50 mt-1" />
               
               {/* Footer */}
-              <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
+              <div className="flex items-center justify-between text-[9px] font-semibold text-slate-400">
                 <div className="flex items-center gap-1">
                   <MapPin size={10} />
                   <span className="truncate max-w-[120px]">{item.location}</span>
@@ -158,6 +157,15 @@ const TasksScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
           </div>
         )}
       </div>
+
+      <CalendarSheet
+        isOpen={isCalendarOpen}
+        onClose={() => setIsCalendarOpen(false)}
+        selectedDate={selectedDate}
+        onSelectDate={(date) => {
+          setSelectedDate(date);
+        }}
+      />
     </div>
   );
 };

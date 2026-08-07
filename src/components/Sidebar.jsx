@@ -2,13 +2,13 @@ import React from 'react';
 import { X, LogOut } from 'lucide-react';
 import { 
   SidebarProfileIcon, SidebarAttendanceIcon, SidebarPrivacyIcon, 
-  SidebarHelpIcon, SidebarSettingsIcon 
+  SidebarHelpIcon, SidebarSettingsIcon
 } from './SidebarIcons';
 const Sidebar = ({ isOpen, setIsOpen, setCurrentScreen, currentScreen }) => {
   // Mock user data in JSON format
   const userData = {
     name: "Sudheer Reddy",
-    empId: "LMC-0225",
+    empId: "LMC0225",
     initials: "SR",
     status: 1 // 1 for Active, 0 for Inactive
   };

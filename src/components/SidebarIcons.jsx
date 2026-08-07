@@ -49,3 +49,13 @@ export const SidebarSettingsIcon = ({ size, isActive }) => (
     style={{ width: size, height: size, objectFit: 'contain' }}
   />
 );
+
+export const SidebarDeliveryIcon = ({ size, isActive }) => (
+  <img 
+    src={isActive 
+      ? 'https://cdn-icons-png.flaticon.com/512/2769/2769339.png'
+      : 'https://cdn-icons-png.flaticon.com/512/2769/2769339.png'} 
+    alt="Delivery Workflow"
+    style={{ width: size, height: size, objectFit: 'contain' }}
+  />
+);
