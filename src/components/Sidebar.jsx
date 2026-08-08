@@ -70,7 +70,7 @@ const Sidebar = ({ isOpen, setIsOpen, setCurrentScreen, currentScreen }) => {
             onClick={ () => { setCurrentScreen('login'); setIsOpen(false); } }
             className="w-full flex items-center gap-2 px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium"
           >
-            <LogOut size={ 18 } />
+            <img src="https://cdn-icons-png.flaticon.com/512/12484/12484007.png" alt="Logout" style={{ width: 18, height: 18, objectFit: 'contain' }} />
             <span className="text-sm">Logout</span>
           </button>
         </div>

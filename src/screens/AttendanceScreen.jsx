@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Calendar, MapPin, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, CheckCircle2, AlertTriangle, Clock, Menu } from 'lucide-react';
 import CalendarSheet from '../components/CalendarSheet';
 
-const AttendanceScreen = ({ setCurrentScreen }) => {
+const AttendanceScreen = ({ setCurrentScreen, setIsSidebarOpen }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showCalendar, setShowCalendar] = useState(false);
 
@@ -70,12 +70,12 @@ const AttendanceScreen = ({ setCurrentScreen }) => {
       <div className="bg-white px-6 pt-12 pb-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => setCurrentScreen('home')} 
+            onClick={() => setIsSidebarOpen(true)} 
             className="p-1 -ml-1 text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
           >
-            <ArrowLeft size={22} />
+            <Menu size={22} />
           </button>
-          <h1 className="text-lg font-bold text-slate-800">Attendance Log</h1>
+          <h1 className="text-lg font-bold text-slate-800">Attendance</h1>
         </div>
       </div>
 
@@ -92,7 +92,7 @@ const AttendanceScreen = ({ setCurrentScreen }) => {
             onClick={() => setShowCalendar(true)}
             className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 active:scale-95 transition-all flex items-center justify-center shrink-0 shadow-sm"
           >
-            <Calendar size={16} />
+            <img src="https://cdn-icons-png.flaticon.com/512/10691/10691802.png" alt="Calendar" className="w-[18px] h-[18px] object-contain opacity-80" />
           </button>
         </div>
 

@@ -13,6 +13,7 @@ import ScanScreen from './screens/ScanScreen';
 import TasksScreen from './screens/TasksScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AttendanceScreen from './screens/AttendanceScreen';
+import NotificationsScreen from './screens/NotificationsScreen';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -45,7 +46,7 @@ function App() {
       case 'home':
         return <HomeScreen setIsSidebarOpen={setIsSidebarOpen} setCurrentScreen={setCurrentScreen} />;
       case 'profile':
-        return <ProfileScreen setCurrentScreen={setCurrentScreen} />;
+        return <ProfileScreen setCurrentScreen={setCurrentScreen} setIsSidebarOpen={setIsSidebarOpen} />;
       case 'routes':
         return <RoutesScreen setCurrentScreen={setCurrentScreen} setIsSidebarOpen={setIsSidebarOpen} />;
       case 'scan':
@@ -53,9 +54,11 @@ function App() {
       case 'tasks':
         return <TasksScreen setCurrentScreen={setCurrentScreen} setIsSidebarOpen={setIsSidebarOpen} />;
       case 'settings':
-        return <SettingsScreen setCurrentScreen={setCurrentScreen} />;
+        return <SettingsScreen setCurrentScreen={setCurrentScreen} setIsSidebarOpen={setIsSidebarOpen} />;
       case 'attendance':
-        return <AttendanceScreen setCurrentScreen={setCurrentScreen} />;
+        return <AttendanceScreen setCurrentScreen={setCurrentScreen} setIsSidebarOpen={setIsSidebarOpen} />;
+      case 'notifications':
+        return <NotificationsScreen setCurrentScreen={setCurrentScreen} />;
       case 'privacy':
       case 'help':
         return (

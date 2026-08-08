@@ -243,7 +243,10 @@ const HomeScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            <button className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+            <button 
+              onClick={() => setCurrentScreen('notifications')}
+              className="relative p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+            >
               <Bell size={ 20 } />
               <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white">
                 2
@@ -266,7 +269,7 @@ const HomeScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
               }` }
           >
             <span className={ `w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-slate-400'}` }></span>
-            { isOnline ? 'ONLINE' : 'OFFLINE' }
+            { isOnline ? 'Online' : 'Offline' }
           </button>
         </div>
       </div>
@@ -368,7 +371,7 @@ const HomeScreen = ({ setIsSidebarOpen, setCurrentScreen }) => {
                 className="bg-white rounded-xl p-2.5 flex flex-col items-center cursor-pointer active:scale-95 transition-transform shadow-sm border border-blue-100"
               >
                 <span className="text-xl font-black text-red-600">{ urgentPickups.length }</span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Urgent</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Emergency</span>
               </div>
             </div>
           </div>

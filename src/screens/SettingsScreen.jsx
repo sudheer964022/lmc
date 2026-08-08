@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, Bell, KeyRound, Shield, Eye, Moon, 
-  Trash2, HelpCircle, Check, Smartphone, Volume2, Database
+  Trash2, HelpCircle, Check, Smartphone, Volume2, Database, Menu
 } from 'lucide-react';
 
-const SettingsScreen = ({ setCurrentScreen }) => {
+const SettingsScreen = ({ setCurrentScreen, setIsSidebarOpen }) => {
   // Toggle states
   const [passkeyEnabled, setPasskeyEnabled] = useState(true);
   const [pushNotifs, setPushNotifs] = useState(true);
@@ -24,10 +24,10 @@ const SettingsScreen = ({ setCurrentScreen }) => {
       {/* Top App Bar */}
       <div className="bg-white px-5 pt-10 pb-3 border-b border-slate-100 sticky top-0 z-10 flex items-center justify-between">
         <button 
-          onClick={() => setCurrentScreen('profile')} 
+          onClick={() => setIsSidebarOpen(true)} 
           className="p-1.5 -ml-1 text-slate-700 hover:bg-slate-100 rounded-full transition-colors active:scale-95"
         >
-          <ArrowLeft size={20} />
+          <Menu size={20} />
         </button>
         <h1 className="text-sm font-black text-slate-900 tracking-tight">Settings</h1>
         <div className="w-8 h-8"></div> {/* Balancer */}

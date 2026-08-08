@@ -66,9 +66,6 @@ const ScanScreen = ({ setCurrentScreen }) => {
           <button className="text-white p-2 rounded-full bg-white/20 backdrop-blur-md">
             <Zap size={ 20 } />
           </button>
-          <button className="text-white p-2 rounded-full bg-white/20 backdrop-blur-md">
-            <ImageIcon size={ 20 } />
-          </button>
         </div>
       </div>
 
@@ -126,9 +123,12 @@ const ScanScreen = ({ setCurrentScreen }) => {
 
       {/* Result Panel (slides up when scanned) */ }
       <div className={ `absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-[0_-8px_32px_rgba(0,0,0,0.12)] z-30 transition-transform duration-500 ${!isScanning && scannedItems.length > 0 ? 'translate-y-0' : 'translate-y-full'}` }>
-        <div className="p-4 pb-4">
-          <div className="flex justify-center mb-2.5">
-            <div className="w-8 h-1 bg-slate-200 rounded-full"></div>
+        <div className="px-4 pt-2 pb-4">
+          <div 
+            className="flex justify-center mb-3 cursor-pointer py-1"
+            onClick={ () => setIsScanning(true) }
+          >
+            <div className="w-12 h-1.5 bg-slate-200 rounded-full hover:bg-slate-300 transition-colors"></div>
           </div>
 
           { scannedItems.length > 0 && (
@@ -177,7 +177,8 @@ const ScanScreen = ({ setCurrentScreen }) => {
                   onClick={ () => {
                     window.demoBackendLog = 'WhatsApp API triggered for Client and Lab regarding collected samples.';
                     window.dispatchEvent(new Event('demo-otp-updated'));
-                    setCurrentScreen('home');
+                    window.forceRouteClientDone = true;
+                    setCurrentScreen('routes');
                   } }
                   className="flex-1 py-2 px-2.5 rounded-xl text-[11px] font-bold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-md shadow-slate-900/15"
                 >

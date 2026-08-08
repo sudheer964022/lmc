@@ -4,7 +4,15 @@ import { emergencyPickups, newSamples } from '../data/mockData';
 import ClientDetails from '../components/ClientDetails';
 
 const RoutesScreen = ({ setCurrentScreen, setIsSidebarOpen }) => {
-  const [selectedClient, setSelectedClient] = useState(null);
+  const [selectedClient, setSelectedClient] = useState(() => {
+    if (window.forceRouteClientDone && window.lastSelectedClient) {
+      // 2 is the 'collect' step for collection tasks
+      const client = { ...window.lastSelectedClient, initialStepIndex: 2, initialScannedState: true };
+      window.forceRouteClientDone = false;
+      return client;
+    }
+    return window.lastSelectedClient || null;
+  });
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showNearbyClients, setShowNearbyClients] = useState(false);
   const [navState, setNavState] = useState('idle'); // 'idle', 'directions', 'navigating'
@@ -554,30 +562,53 @@ const RoutesScreen = ({ setCurrentScreen, setIsSidebarOpen }) => {
               <span>En Route (GPS Auto-Tracking)</span>
               <span className="text-[8px] font-semibold opacity-75 mt-0.5">Auto-arriving when &lt; 200m away...</span>
             </button>
+          ) : selectedLocation?.taskType === 'delivery' ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Enter OTP" 
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all text-center tracking-[0.2em]"
+                  maxLength={6}
+                />
+                <a href="#" className="text-[10px] font-bold text-purple-600 hover:text-purple-700 whitespace-nowrap shrink-0 px-2 py-2 underline underline-offset-2">
+                  Send OTP
+                </a>
+              </div>
+              <button
+                onClick={ () => {
+                  setSelectedClient({ ...selectedLocation, initialStepIndex: 4 });
+                  setNavState('idle');
+                  setNavStep('going');
+                } }
+                className="w-full py-2.5 rounded-xl font-bold text-xs text-white flex flex-col items-center active:scale-[0.97] transition-all"
+                style={ {
+                  background: 'linear-gradient(135deg,#6b21a8,#9333ea)',
+                  boxShadow: '0 4px 16px rgba(147,51,234,0.3)',
+                } }
+              >
+                <span>Verify OTP & Deliver</span>
+                <span className="text-[8px] font-semibold opacity-75 mt-0.5">
+                  Optional: Upload Snapshot
+                </span>
+              </button>
+            </div>
           ) : (
             <button
               onClick={ () => {
-                if (selectedLocation?.taskType === 'delivery') {
-                  setSelectedClient(selectedLocation); // open client details to do the verify/deliver workflow
-                } else {
-                  setCurrentScreen('scan'); // open scan screen for collections
-                }
+                setCurrentScreen('scan');
                 setNavState('idle');
                 setNavStep('going');
               } }
               className="w-full py-2.5 rounded-xl font-bold text-xs text-white flex flex-col items-center active:scale-[0.97] transition-all"
               style={ {
-                background: selectedLocation?.taskType === 'delivery' 
-                  ? 'linear-gradient(135deg,#6b21a8,#9333ea)' 
-                  : 'linear-gradient(135deg,#065f46,#10b981)',
-                boxShadow: selectedLocation?.taskType === 'delivery'
-                  ? '0 4px 16px rgba(147,51,234,0.3)'
-                  : '0 4px 16px rgba(16,185,129,0.3)',
+                background: 'linear-gradient(135deg,#065f46,#10b981)',
+                boxShadow: '0 4px 16px rgba(16,185,129,0.3)',
               } }
             >
-              <span>{ selectedLocation?.taskType === 'delivery' ? 'Verify OTP & Deliver' : 'Collect Sample' }</span>
+              <span>Collect Sample</span>
               <span className="text-[8px] font-semibold opacity-75 mt-0.5">
-                { selectedLocation?.taskType === 'delivery' ? 'Optional: Upload Snapshot' : 'Scan barcode to verify' }
+                Scan barcode to verify
               </span>
             </button>
           ) }

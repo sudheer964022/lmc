@@ -84,19 +84,29 @@ const DemoPanel = ({ activeTab, setIsDemoPanelOpen, activeOtps }) => {
           </div>
         </div>
 
-        {/* Backend Webhook logs */}
-        {activeOtps.backendLog && (
-          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 animate-fade-in-up">
-            <span className="font-bold text-slate-700 block mb-1.5 uppercase text-[9px] tracking-wider flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
-              📡 Backend Hook Activity
-            </span>
-            <p className="text-[10px] font-mono text-blue-700 bg-white p-2 rounded border border-slate-200 leading-normal break-words">
-              {activeOtps.backendLog}
-            </p>
-          </div>
-        )}
       </div>
+    </div>
+  );
+};
+
+const BackendLogPanel = ({ backendLog, onClose }) => {
+  if (!backendLog) return null;
+  return (
+    <div className="absolute bottom-4 right-2 lg:bottom-8 lg:right-4 z-50 bg-white border border-slate-200 rounded-2xl p-5 shadow-lg w-full max-w-[280px] shrink-0 animate-fade-in-up hidden sm:block">
+      <button 
+        onClick={onClose}
+        className="text-slate-400 hover:text-slate-600 transition-colors absolute top-4 right-4"
+        title="Dismiss"
+      >
+        <X size={15} />
+      </button>
+      <span className="font-bold text-slate-700 block mb-2 uppercase text-[10px] tracking-wider flex items-center gap-1.5 pr-6">
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        📡 Backend Webhooks
+      </span>
+      <p className="text-[11px] font-mono text-emerald-800 bg-emerald-50 p-3 rounded-xl border border-emerald-100 leading-normal break-words shadow-sm">
+        {backendLog}
+      </p>
     </div>
   );
 };
@@ -160,9 +170,8 @@ graph TD
     M -->|OTP Valid| N[Deliver Materials]
     M -->|OTP Invalid| O[Retry OTP / Contact Lab Support]
     N --> P[Client Confirms Receipt]
-    P --> Q[Capture Photo Optional]
-    Q --> R[Capture Digital Signature]
-    R --> S[Update Delivery Status]
+    P --> Q[Capture Photo Required]
+    Q --> S[Update Delivery Status]
     S --> T[Material Delivery Completed]
   `;
 
@@ -173,38 +182,38 @@ graph TD
       {!isDesktopSidebarOpen && (
         <button 
           onClick={() => setIsDesktopSidebarOpen(true)}
-          className="absolute top-4 left-4 lg:top-8 lg:left-8 z-50 bg-white p-3 rounded-xl shadow-md border border-slate-200 text-slate-600 hover:text-blue-600 transition-colors"
+          className="absolute top-4 left-4 lg:top-8 lg:left-8 z-50 bg-white p-2.5 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.06)] border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-md transition-all active:scale-95"
         >
-          <Network size={24} />
+          <Network size={18} strokeWidth={2.5} />
         </button>
       )}
 
       {/* Left Sidebar */}
       {isDesktopSidebarOpen && (
-        <div className="flex flex-col w-72 bg-white shadow-2xl p-6 border-r border-slate-200 overflow-y-auto scrollbar-hide absolute inset-y-0 left-0 z-[60] animate-fade-in-up">
+        <div className="flex flex-col w-64 bg-slate-50 shadow-2xl p-4 border-r border-slate-200 overflow-y-auto scrollbar-hide absolute inset-y-0 left-0 z-[60] animate-fade-in-up">
           <button 
             onClick={() => setIsDesktopSidebarOpen(false)}
-            className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
+            className="absolute top-4 right-4 p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600 rounded-md transition-colors"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
           
-          <h2 className="text-xl font-bold text-slate-800 mb-6 px-2 pr-6">Project Workflows</h2>
+          <h2 className="text-xs font-black text-slate-500 mb-3 px-2 pr-6 tracking-wider uppercase">Project Workflows</h2>
           
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
             <button 
               onClick={() => {
                 setActiveTab('wireframe');
                 if (window.innerWidth < 1024) setIsDesktopSidebarOpen(false);
               }}
-              className={`flex items-center gap-3 w-full border font-medium py-3 px-4 rounded-xl transition-all text-left shadow-sm active:scale-95 ${
+              className={`flex items-center gap-2.5 w-full border font-bold py-2 px-2.5 rounded-lg transition-all text-left active:scale-95 group ${
                 activeTab === 'wireframe' 
-                  ? 'bg-blue-50 text-blue-600 border-blue-200' 
-                  : 'bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-600 border-slate-200 hover:border-blue-200'
+                  ? 'bg-white text-indigo-700 border-indigo-200 shadow-sm' 
+                  : 'bg-transparent text-slate-600 hover:bg-white hover:text-slate-900 border-transparent hover:border-slate-200 hover:shadow-sm'
               }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 shrink-0"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-              <span className="text-sm leading-tight">LMC Wireframe</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`${activeTab === 'wireframe' ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'} shrink-0 transition-colors`}><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+              <span className="text-[11px] leading-tight">LMC Wireframe</span>
             </button>
 
             <button 
@@ -212,14 +221,14 @@ graph TD
                 setActiveTab('sample_collection');
                 if (window.innerWidth < 1024) setIsDesktopSidebarOpen(false);
               }}
-              className={`flex items-center gap-3 w-full border font-medium py-3 px-4 rounded-xl transition-all text-left shadow-sm active:scale-95 ${
+              className={`flex items-center gap-2.5 w-full border font-bold py-2 px-2.5 rounded-lg transition-all text-left active:scale-95 group ${
                 activeTab === 'sample_collection' 
-                  ? 'bg-blue-50 text-blue-600 border-blue-200' 
-                  : 'bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-600 border-slate-200 hover:border-blue-200'
+                  ? 'bg-white text-emerald-700 border-emerald-200 shadow-sm' 
+                  : 'bg-transparent text-slate-600 hover:bg-white hover:text-slate-900 border-transparent hover:border-slate-200 hover:shadow-sm'
               }`}
             >
-              <Network size={18} className="text-blue-600 shrink-0" />
-              <span className="text-sm leading-tight">Sample Collection Workflow</span>
+              <Network size={15} strokeWidth={2.5} className={`${activeTab === 'sample_collection' ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-500'} shrink-0 transition-colors`} />
+              <span className="text-[11px] leading-tight">Sample Collection</span>
             </button>
 
             <button 
@@ -227,14 +236,14 @@ graph TD
                 setActiveTab('material_delivery');
                 if (window.innerWidth < 1024) setIsDesktopSidebarOpen(false);
               }}
-              className={`flex items-center gap-3 w-full border font-medium py-3 px-4 rounded-xl transition-all text-left shadow-sm active:scale-95 ${
+              className={`flex items-center gap-2.5 w-full border font-bold py-2 px-2.5 rounded-lg transition-all text-left active:scale-95 group ${
                 activeTab === 'material_delivery' 
-                  ? 'bg-blue-50 text-blue-600 border-blue-200' 
-                  : 'bg-slate-50 text-slate-700 hover:bg-blue-50 hover:text-blue-600 border-slate-200 hover:border-blue-200'
+                  ? 'bg-white text-amber-700 border-amber-200 shadow-sm' 
+                  : 'bg-transparent text-slate-600 hover:bg-white hover:text-slate-900 border-transparent hover:border-slate-200 hover:shadow-sm'
               }`}
             >
-              <Network size={18} className="text-blue-600 shrink-0" />
-              <span className="text-sm leading-tight">Material Delivery Workflow</span>
+              <Network size={15} strokeWidth={2.5} className={`${activeTab === 'material_delivery' ? 'text-amber-600' : 'text-slate-400 group-hover:text-amber-500'} shrink-0 transition-colors`} />
+              <span className="text-[11px] leading-tight">Materials Delivery</span>
             </button>
           </div>
         </div>
@@ -276,6 +285,15 @@ graph TD
             {isDemoPanelOpen && (
               <DemoPanel activeTab={activeTab} setIsDemoPanelOpen={setIsDemoPanelOpen} activeOtps={activeOtps} />
             )}
+            
+            {/* Backend Log Panel (Floating Absolute - Top Left) */}
+            <BackendLogPanel 
+              backendLog={activeOtps.backendLog} 
+              onClose={() => {
+                window.demoBackendLog = '';
+                setActiveOtps(prev => ({ ...prev, backendLog: '' }));
+              }} 
+            />
           </div>
         ) : (
           /* Workflow Main Body Viewer */

@@ -3,7 +3,7 @@ import {
   ArrowLeft, MapPin, Navigation, ScanBarcode, 
   Camera, CheckCircle2, Package, Clock, Phone, MessageSquare,
   ParkingSquare, Bike, AlertCircle, Bell, Paperclip, CheckCheck,
-  FileText, Image as ImageIcon, ShieldCheck, PenTool
+  FileText, Image as ImageIcon, ShieldCheck, PenTool, X
 } from 'lucide-react';
 
 // ─── Bike Status Steps ────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ const DELIVERY_STEPS = [
   { id: 'going',   label: 'Going',     fullLabel: 'Going to Client', subLabel: 'En route',       icon: Bike,         bgClass: 'bg-blue-600',    lightBg: 'bg-blue-50',    textClass: 'text-blue-700',    borderClass: 'border-blue-500',    ringClass: 'ring-blue-400',    glowColor: '37,99,235'  },
   { id: 'near',    label: 'Near',      fullLabel: 'Near Client',     subLabel: 'Arrived',        icon: MapPin,       bgClass: 'bg-amber-500',   lightBg: 'bg-amber-50',   textClass: 'text-amber-700',   borderClass: 'border-amber-500',   ringClass: 'ring-amber-400',   glowColor: '245,158,11' },
   { id: 'verify',  label: 'Verify',    fullLabel: 'Verify Client',   subLabel: 'Enter OTP',      icon: ShieldCheck,  bgClass: 'bg-purple-600',  lightBg: 'bg-purple-50',  textClass: 'text-purple-700',  borderClass: 'border-purple-500',  ringClass: 'ring-purple-400',  glowColor: '147,51,234' },
-  { id: 'deliver', label: 'Deliver',   fullLabel: 'Deliver Item',    subLabel: 'Sign & Handover',icon: Package,      bgClass: 'bg-emerald-600', lightBg: 'bg-emerald-50', textClass: 'text-emerald-700', borderClass: 'border-emerald-500', ringClass: 'ring-emerald-400', glowColor: '5,150,105'  },
+  { id: 'deliver', label: 'Deliver',   fullLabel: 'Deliver Item',    subLabel: 'Snapshot & Handover',icon: Package,      bgClass: 'bg-emerald-600', lightBg: 'bg-emerald-50', textClass: 'text-emerald-700', borderClass: 'border-emerald-500', ringClass: 'ring-emerald-400', glowColor: '5,150,105'  },
   { id: 'done',    label: 'Done',      fullLabel: 'Delivered',       subLabel: 'Complete!',      icon: CheckCircle2, bgClass: 'bg-green-600',   lightBg: 'bg-green-50',   textClass: 'text-green-700',   borderClass: 'border-green-500',   ringClass: 'ring-green-400',   glowColor: '22,163,74'  },
 ];
 
@@ -467,9 +467,9 @@ const NotificationToast = ({ step, client, prevStepId }) => {
 
 // ─── Main ClientDetails ───────────────────────────────────────────────────────
 const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(client.initialStepIndex || 0);
   const [prevStepId, setPrevStepId] = useState(null);
-  const [scanned, setScanned] = useState(false);
+  const [scanned, setScanned] = useState(client.initialScannedState || false);
   const [showScanner, setShowScanner] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -478,7 +478,20 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
   const [signature, setSignature] = useState(null);
   const [otpError, setOtpError] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState(null);
   
+  const fileInputRef = useRef(null);
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUploadedImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const activeSteps = client?.taskType === 'delivery' ? DELIVERY_STEPS : COLLECTION_STEPS;
 
   const [chatHistory, setChatHistory] = useState(
@@ -499,6 +512,11 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
     }
   }, [client]);
 
+  const handleClose = () => {
+    window.lastSelectedClient = null;
+    onClose();
+  };
+
   if (!client) return null;
 
   // Safe fallback if out of bounds
@@ -517,9 +535,9 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
 
   const handleNear = () => {
     setStepIndex(currentIndex => {
-      if (currentIndex === 0) { // Only transition from 'going' (0) to 'near' (1)
-        setPrevStepId(activeSteps[0].id);
-        return 1;
+      if (activeSteps[currentIndex]?.id === 'going') {
+        setPrevStepId(activeSteps[currentIndex].id);
+        return currentIndex + 1;
       }
       return currentIndex;
     });
@@ -535,24 +553,17 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
   };
 
   const handleCollect = () => {
+    window.lastSelectedClient = client;
     setCurrentScreen('scan');
-    setTimeout(() => {
-      setScanned(true);
-      setPrevStepId(currentStep.id);
-      setStepIndex(activeSteps.length - 1);
-    }, 800);
   };
 
   const handleCompletePickup = () => {
     if (client?.taskType === 'delivery') {
-      setShowWhatsAppModal(true);
-      // Automatically close the modal and the details page after a delay
-      setTimeout(() => {
-        setShowWhatsAppModal(false);
-        onClose();
-      }, 3500);
+      window.demoBackendLog = `WhatsApp confirmation sent to ${client.clientName} & Central Lab`;
+      window.dispatchEvent(new Event('demo-otp-updated'));
+      handleClose();
     } else {
-      onClose();
+      handleClose();
     }
   };
 
@@ -562,8 +573,8 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
       case 'going':   return { label: 'En Route (GPS Auto-Tracking)', sublabel: 'Auto-arriving when < 200m...', onClick: null, disabled: true, gradient: 'linear-gradient(135deg,#64748b,#94a3b8)', glow: '148,163,184' };
       case 'near':    return { label: client?.taskType === 'delivery' ? 'Verify Identity' : 'Collect Sample', sublabel: client?.taskType === 'delivery' ? 'Proceed to OTP' : 'Scan barcode to verify', onClick: client?.taskType === 'delivery' ? advanceStep : handleCollect, gradient: 'linear-gradient(135deg,#065f46,#10b981)', glow: '16,185,129' };
       case 'verify':  return null; // Handled inline by OTP form
-      case 'deliver': return { label: 'Handover & Sign', sublabel: 'Client to sign and confirm', onClick: () => { setSignature('signed'); advanceStep(); }, gradient: 'linear-gradient(135deg,#15803d,#22c55e)', glow: '34,197,94'  };
-      case 'collect': return { label: 'Sample Collected ✅',  sublabel: 'Tap to confirm collection',onClick: advanceStep,   gradient: 'linear-gradient(135deg,#15803d,#22c55e)', glow: '34,197,94'  };
+      case 'deliver': return { label: 'Confirm Delivery', sublabel: !uploadedImage ? 'Photo upload required' : 'Tap to complete handover', onClick: () => { advanceStep(); }, disabled: !uploadedImage, gradient: 'linear-gradient(135deg,#15803d,#22c55e)', glow: '34,197,94'  };
+      case 'collect': return { label: 'Sample Collected ✅',  sublabel: !uploadedImage ? 'Photo upload required' : 'Tap to confirm collection', onClick: advanceStep, disabled: !uploadedImage, gradient: 'linear-gradient(135deg,#15803d,#22c55e)', glow: '34,197,94'  };
       case 'done':    return { label: client?.taskType === 'delivery' ? 'Complete Delivery 🎉' : 'Complete Pickup 🎉',   sublabel: 'All steps finished',       onClick: handleCompletePickup, gradient: 'linear-gradient(135deg,#1e40af,#2563eb)', glow: '37,99,235'  };
       default: return null;
     }
@@ -573,11 +584,19 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
 
   return (
     <div className="absolute inset-0 bg-slate-50 z-[60] flex flex-col overflow-hidden" style={{ animation: 'slide-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both' }}>
+      <input 
+        type="file" 
+        accept="image/*" 
+        capture="environment"
+        ref={fileInputRef} 
+        style={{ display: 'none' }} 
+        onChange={handleFileChange} 
+      />
 
       {/* ── Header ── */}
       <div className="bg-white px-4 pt-12 pb-3 shadow-sm z-10 flex items-center justify-between gap-3 border-b border-slate-100">
         <div className="flex items-center gap-2.5 min-w-0">
-          <button onClick={onClose} className="p-2 -ml-2 shrink-0 text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
+          <button onClick={handleClose} className="p-2 -ml-2 shrink-0 text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
             <ArrowLeft size={22} />
           </button>
           <div className="flex flex-col min-w-0">
@@ -684,13 +703,16 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
         </div>
 
         {/* Scan/photo actions (stop → done) */}
-        {(currentStep.id === 'stop' || currentStep.id === 'collect' || currentStep.id === 'done') && (
+        {client?.taskType !== 'delivery' && (currentStep.id === 'stop' || currentStep.id === 'collect' || currentStep.id === 'done') && (
           <div className="mx-4 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden shrink-0" style={{ animation: 'slide-up 0.4s 0.15s both' }}>
             <div className="px-4 py-4">
               <h2 className="text-sm font-bold text-slate-800 mb-3">Collection Actions</h2>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => { setCurrentScreen('scan'); setTimeout(() => { setScanned(true); setStepIndex(activeSteps.length - 1); }, 600); }}
+                  onClick={() => { 
+                    window.lastSelectedClient = client;
+                    setCurrentScreen('scan'); 
+                  }}
                   className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 ${
                     scanned ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-blue-500 bg-blue-50 text-blue-700'
                   }`}
@@ -704,12 +726,15 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
                 </button>
 
                 <button
-                  onClick={() => setCurrentScreen('scan')}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-slate-200 bg-white text-slate-600 active:scale-95 transition-all"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 ${
+                    uploadedImage ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600'
+                  }`}
+                  style={{ boxShadow: uploadedImage ? '0 4px 16px rgba(16,185,129,0.2)' : 'none' }}
                 >
-                  <Camera size={22} className="mb-1.5" />
-                  <span className="font-bold text-[11px] text-center">Upload Photo</span>
-                  <span className="text-[9px] uppercase tracking-wider font-bold mt-0.5 text-slate-400">Optional</span>
+                  {uploadedImage ? <CheckCircle2 size={22} className="mb-1.5" /> : <Camera size={22} className="mb-1.5" />}
+                  <span className="font-bold text-[11px] text-center">{uploadedImage ? 'Photo Added ✓' : 'Upload Photo'}</span>
+                  {!uploadedImage && <span className="text-[9px] uppercase tracking-wider font-bold mt-0.5 text-rose-500">Mandatory</span>}
                 </button>
               </div>
             </div>
@@ -718,24 +743,24 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
 
         {/* OTP Verification UI */}
         {currentStep.id === 'verify' && (
-          <div className="mx-4 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden shrink-0 p-4" style={{ animation: 'slide-up 0.4s 0.15s both' }}>
-            <h2 className="text-sm font-bold text-slate-800 mb-2">Verify Identity</h2>
-            <p className="text-[11px] text-slate-500 mb-4 leading-tight">Enter the 4-digit OTP shared by the client.</p>
-            <div className="flex flex-col gap-3">
+          <div className="mx-4 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden shrink-0 px-3 py-2.5" style={{ animation: 'slide-up 0.4s 0.15s both' }}>
+            <h2 className="text-[13px] font-bold text-slate-800 mb-0.5">Verify Identity</h2>
+            <p className="text-[10px] text-slate-500 mb-1.5 leading-tight">Enter the 4-digit OTP shared by the client.</p>
+            <div className="flex flex-col gap-1.5">
               <input 
                 type="text" 
                 maxLength={4}
                 value={otp}
                 onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
                 placeholder="____" 
-                className={`text-center text-2xl font-black tracking-[0.5em] p-3 rounded-xl border-2 outline-none transition-colors ${otpError ? 'border-red-400 bg-red-50 text-red-600 focus:border-red-500' : 'border-slate-200 focus:border-blue-500 bg-slate-50'}`}
+                className={`text-center text-lg font-black tracking-[0.5em] py-1.5 rounded-lg border-2 outline-none transition-colors ${otpError ? 'border-red-400 bg-red-50 text-red-600 focus:border-red-500' : 'border-slate-200 focus:border-blue-500 bg-slate-50'}`}
               />
               {otpError && <p className="text-[10px] font-bold text-red-500 text-center -mt-1">Invalid OTP, try 1234</p>}
               <button 
                 onClick={handleVerifyOtp}
                 disabled={otp.length !== 4}
-                className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
-                style={{ boxShadow: otp.length === 4 ? '0 4px 16px rgba(147,51,234,0.3)' : 'none' }}
+                className="w-full py-2 bg-purple-600 text-white rounded-lg font-bold text-[11px] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+                style={{ boxShadow: otp.length === 4 ? '0 2px 8px rgba(147,51,234,0.3)' : 'none' }}
               >
                 Verify OTP
               </button>
@@ -743,28 +768,42 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
           </div>
         )}
 
-        {/* Digital Signature UI */}
+        {/* Delivery Snapshot UI */}
         {currentStep.id === 'deliver' && (
-          <div className="mx-4 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden shrink-0 p-4" style={{ animation: 'slide-up 0.4s 0.15s both' }}>
-            <h2 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-              <PenTool size={16} className="text-emerald-600" /> Client Signature
+          <div className="mx-4 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden shrink-0 p-3" style={{ animation: 'slide-up 0.4s 0.15s both' }}>
+            <h2 className="text-[13px] font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+              <Camera size={14} className="text-emerald-600" /> Delivery Snapshot
             </h2>
-            <p className="text-[11px] text-slate-500 mb-3 leading-tight">Please ask the client to sign below to confirm receipt of the materials.</p>
-            <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl h-32 flex flex-col items-center justify-center text-slate-400 relative">
-              {signature ? (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  {/* Simulated Signature Line */}
-                  <svg viewBox="0 0 100 40" className="w-full h-full p-4 opacity-70">
-                    <path d="M10,20 Q30,5 50,20 T90,20" fill="none" stroke="currentColor" strokeWidth="2" />
-                  </svg>
+            <p className="text-[10px] text-slate-500 mb-2.5 leading-tight">Mandatory to upload a photo of the delivered materials at the client location.</p>
+            {uploadedImage ? (
+              <div className="relative w-full h-24 rounded-xl overflow-hidden border border-emerald-200 shadow-sm mt-1 mb-2">
+                <img src={uploadedImage} alt="Uploaded snapshot" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white">
+                  <CheckCircle2 size={24} className="text-emerald-400 mb-1 shadow-sm" />
+                  <span className="text-[10px] font-bold">Photo Uploaded</span>
                 </div>
-              ) : (
-                <span className="text-[10px] font-semibold">Sign Here</span>
-              )}
-            </div>
+                <button 
+                  onClick={() => setUploadedImage(null)}
+                  className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full hover:bg-black/70 text-white transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <div>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full bg-slate-50 border-2 border-dashed border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 rounded-xl py-4 flex flex-col items-center justify-center text-slate-400 transition-colors active:scale-[0.98]"
+                >
+                  <Camera size={22} className="mb-1 text-slate-400" />
+                  <span className="text-[11px] font-bold text-slate-600">Tap to Upload Photo</span>
+                  <span className="text-[8px] uppercase tracking-wider font-bold mt-0.5 text-slate-400">Optional</span>
+                </button>
+              </div>
+            )}
             <button 
-              onClick={() => { setSignature('signed'); advanceStep(); }}
-              className="mt-3 w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-xs active:scale-[0.98] transition-all"
+              onClick={() => { advanceStep(); }}
+              className="mt-2.5 w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-xs active:scale-[0.98] transition-all"
               style={{ boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}
             >
               Confirm Delivery
@@ -789,7 +828,7 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
                 {currentStep.id === 'near'    && 'Confirm your arrival and securely park your bike before entering.'}
                 {currentStep.id === 'stop'    && 'Scan the sample barcode to verify the collected specimens.'}
                 {currentStep.id === 'verify'  && 'Ask the client for the OTP sent to their registered mobile number.'}
-                {currentStep.id === 'deliver' && 'Ensure all items are handed over securely and get the digital signature.'}
+                {currentStep.id === 'deliver' && 'Ensure all items are handed over securely. You may take an optional snapshot.'}
                 {currentStep.id === 'collect' && 'Confirm all samples are bagged. Tap to mark as collected.'}
               </p>
             </div>
@@ -801,9 +840,12 @@ const ClientDetails = ({ client, onClose, setCurrentScreen }) => {
       <div className="absolute bottom-0 left-0 right-0 p-4 pb-5 bg-white border-t border-slate-100 flex flex-col gap-2"
         style={{ boxShadow: '0 -12px 40px rgba(0,0,0,0.06)' }}>
         
-        {(currentStep.id === 'near' || currentStep.id === 'collect') && (
+        {(currentStep.id === 'near' || currentStep.id === 'collect') && client?.taskType !== 'delivery' && (
           <button 
-            onClick={() => setCurrentScreen('scan')}
+            onClick={() => {
+              window.lastSelectedClient = client;
+              setCurrentScreen('scan');
+            }}
             className="w-full py-2.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-100 active:scale-95 transition-all shadow-sm"
           >
             <ScanBarcode size={16} />

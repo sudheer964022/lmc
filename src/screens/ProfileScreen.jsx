@@ -4,21 +4,21 @@ import {
 } from '../components/SidebarIcons';
 import {
   User, Mail, Phone, Settings, ShieldCheck, HelpCircle,
-  LogOut, ChevronRight, Edit3, ArrowLeft, ClipboardList
+  LogOut, ChevronRight, Edit3, ArrowLeft, ClipboardList, Menu
 } from 'lucide-react';
 import IdCardIcon from '../components/IdCardIcon';
 
-const ProfileScreen = ({ setCurrentScreen }) => {
+const ProfileScreen = ({ setCurrentScreen, setIsSidebarOpen }) => {
   return (
     <div className="flex-1 w-full bg-slate-50 flex flex-col animate-fade-in-up overflow-hidden">
       {/* Header */ }
-      <div className="bg-white px-6 pt-12 pb-6 border-b border-slate-100 sticky top-0 z-10">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-white px-6 pt-12 pb-4 border-b border-slate-100 sticky top-0 z-10">
+        <div className="flex justify-between items-center mb-2">
           <button
-            onClick={ () => setCurrentScreen('home') }
+            onClick={ () => setIsSidebarOpen(true) }
             className="p-2 -ml-2 text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
           >
-            <ArrowLeft size={ 24 } />
+            <Menu size={ 24 } />
           </button>
           <h1 className="text-lg font-bold text-slate-800">Profile</h1>
           <button className="p-2 -mr-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
