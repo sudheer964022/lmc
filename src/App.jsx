@@ -14,6 +14,8 @@ import TasksScreen from './screens/TasksScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import AttendanceScreen from './screens/AttendanceScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
+import PrivacyScreen from './screens/PrivacyScreen';
+import HelpScreen from './screens/HelpScreen';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -60,31 +62,9 @@ function App() {
       case 'notifications':
         return <NotificationsScreen setCurrentScreen={setCurrentScreen} />;
       case 'privacy':
+        return <PrivacyScreen setCurrentScreen={setCurrentScreen} setIsSidebarOpen={setIsSidebarOpen} />;
       case 'help':
-        return (
-          <div className="flex-1 flex flex-col relative overflow-hidden bg-slate-50 animate-fade-in-up">
-            {/* Top App Bar */}
-            <div className="bg-blue-600 text-white p-4 flex justify-between items-center z-10 shadow-md sticky top-0">
-              <button 
-                onClick={() => setIsSidebarOpen(true)} 
-                className="p-2 -ml-2 rounded-full hover:bg-blue-700 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-              </button>
-              <h1 className="font-bold text-lg capitalize">{currentScreen}</h1>
-              <div className="w-10 h-10"></div> {/* Placeholder for layout balance */}
-            </div>
-            
-            {/* Main Content Area */}
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-slate-200 rounded-full mb-4 flex items-center justify-center text-slate-400">
-                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-              </div>
-              <h2 className="text-xl text-slate-700 font-bold mb-2 capitalize">{currentScreen} Screen</h2>
-              <p className="text-slate-500">This module will be built in Phase 2.</p>
-            </div>
-          </div>
-        );
+        return <HelpScreen setCurrentScreen={setCurrentScreen} setIsSidebarOpen={setIsSidebarOpen} />;
       default:
         return <LoginScreen setCurrentScreen={setCurrentScreen} />;
     }
